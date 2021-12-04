@@ -29,9 +29,13 @@ test "test" {
   var a3 = [_]i16{0, 0, 0};
   var a4 = [_]i16{12, 14, 12, 14};
   try expect(countIncreases(a1[0..], 1)==2);
+  try expect(countIncreases(a1[0..], 2)==1);
   try expect(countIncreases(a2[0..], 1)==2);
+  try expect(countIncreases(a2[0..], 3)==1);
   try expect(countIncreases(a3[0..], 1)==0);
+  try expect(countIncreases(a3[0..], 3)==0);
   try expect(countIncreases(a4[0..], 1)==2);
+  try expect(countIncreases(a4[0..], 3)==1);
 }
 
 pub fn main() anyerror!void {
