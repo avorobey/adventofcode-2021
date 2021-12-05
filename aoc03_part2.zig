@@ -75,7 +75,6 @@ pub fn main() anyerror!void {
   var data = Data{
     .map = map,
   };
-  defer map.deinit();
   while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
     // StringHashMap holds its keys as slices, so we need to make them unique.
     // In a proper program we'd keep track of these dupes and free them.
