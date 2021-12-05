@@ -106,14 +106,23 @@ pub fn main() anyerror!void {
 
   var iter = std.mem.tokenize(u8, first_line, ",");
   var done = false;
+  const initial_len = boards.items.len;
   while (iter.next()) |token| {
     const num = try std.fmt.parseInt(u16, token, 10);
-    for (boards.items) |_, index| {
+    var index:usize = 0;
+    while (index < boards.items.len) {
       boards.items[index].processNum(num);
       if (boards.items[index].isBingo()) {
-        std.debug.print("part1: {}\n", .{boards.items[index].unmarkedSum()*num});
-        done = true;
-        break;
+        const res:u64 = @as(u64, boards.items[index].unmarkedSum()) * num;
+        if (boards.items.len == initial_len) { // first bingo win
+          std.debug.print("part1: {}\n", .{res});
+        }
+        if (boards.items.len == 1) { // last bingo win
+          std.debug.print("part2: {}\n", .{res});
+        }
+        _ = boards.swapRemove(index);
+      } else {
+        index += 1;
       }
     }
     if (done) {
