@@ -71,11 +71,14 @@ pub fn main() anyerror!void {
 
   var gpalloc = std.heap.GeneralPurposeAllocator(.{}){};
   var map = std.StringHashMap(u16).init(&gpalloc.allocator);
+  defer map.deinit();
   var data = Data{
     .map = map,
   };
   defer map.deinit();
   while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+    // StringHashMap holds its keys as slices, so we need to make them unique.
+    // In a proper program we'd keep track of these dupes and free them.
     var dline = try gpalloc.allocator.dupe(u8, line);
     try data.processLine(dline);
   }
