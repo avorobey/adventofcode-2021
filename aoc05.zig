@@ -70,13 +70,19 @@ pub const Rect = struct {
 }; 
 
 fn addToDisjointList(list: *std.ArrayList(Rect), new: *std.ArrayList(Rect)) !void {
+  //std.debug.print("Starting addToDisjointList\n", .{});
+  //dumpRects(list); dumpRects(new);
+  //std.debug.print("gogogo\n", .{});
   var i:usize = 0;
   while (i < new.items.len) {
     var j:usize = 0;
+    var advance_i = true;
     while (j < list.items.len) {
       if (i >= new.items.len) {
         break;
       }
+      //std.debug.print("i={}, j={}\n", .{i,j});
+      //std.debug.print("rects: ", .{}); dumpRects(list); std.debug.print("new_rects: ", .{}); dumpRects(new);
       if (list.items[j].intersect(&new.items[i])) |inter| {
         var olditem = list.items[j];
         var newitem = new.items[i];
@@ -85,11 +91,14 @@ fn addToDisjointList(list: *std.ArrayList(Rect), new: *std.ArrayList(Rect)) !voi
         _ = list.swapRemove(j);
         try newitem.subtractAndAppend(&inter, new);
         _ = new.swapRemove(i);
+        advance_i = false;
       } else {
         j += 1;
       }
     }
-    i += 1;
+    if (advance_i) {
+      i += 1;
+    }
   }
   try list.appendSlice(new.items);
 }
@@ -105,11 +114,10 @@ fn multiple(list: *std.ArrayList(Rect)) i64 {
 }
 
 fn dumpRects(list: *std.ArrayList(Rect)) void {
-  std.debug.print("---\n", .{});
   for (list.items) |rect| {
-    std.debug.print("rect [{}]: {}:{} -> {}:{}\n", .{rect.inum, rect.lbx, rect.lby, rect.rux, rect.ruy});
+    std.debug.print("{}:{}->{}:{} [{}] |", .{rect.lbx, rect.lby, rect.rux, rect.ruy, rect.inum});
   }
-  std.debug.print("---\n", .{});
+  std.debug.print("\n", .{});
 }
 
 test "basic Rect" {
@@ -134,19 +142,19 @@ test "addToDisjoint" {
   try addToDisjointList(&rects, &new_rects); 
   try expect(multiple(&rects) == 1);
 
-  dumpRects(&rects);
+  //dumpRects(&rects);
 
   new_rects.clearAndFree();
   try new_rects.append(Rect.init(2,1,2,3));
   try addToDisjointList(&rects, &new_rects); 
-  dumpRects(&rects);
+  //dumpRects(&rects);
 
   new_rects.clearAndFree();
   try new_rects.append(Rect.init(1,2,3,2));
   try addToDisjointList(&rects, &new_rects); 
-  dumpRects(&rects);
+  //dumpRects(&rects);
 
-  std.debug.print("{}\n", .{multiple(&rects)});
+  //std.debug.print("{}\n", .{multiple(&rects)});
   try expect(multiple(&rects) == 5);
 }
 
@@ -173,9 +181,9 @@ pub fn main() anyerror!void {
     if (!(rect.lbx == rect.rux or rect.lby == rect.ruy)) {
       continue;
     }
-    std.debug.print("line:{s}\n", .{line});
-    std.debug.print("rects size:{}\n", .{rects.items.len});
-    std.debug.print("new size:{}\n", .{new_rects.items.len});
+    //std.debug.print("line:{s}\n", .{line});
+    //std.debug.print("rects size:{}\n", .{rects.items.len});
+    //std.debug.print("new size:{}\n", .{new_rects.items.len});
     new_rects.clearAndFree();
     try new_rects.append(rect);
     try addToDisjointList(&rects, &new_rects);
