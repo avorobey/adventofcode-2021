@@ -56,7 +56,7 @@ fn processEdge(edge: []const u8) void {
 }
 
 var visited = [_]bool{false} ** 15;
-fn countPathsRec(curr_ind: u8, cnt: *u16) void {
+fn countPathsRec(curr_ind: u8, cnt: *u32, allow_second_chance: bool) void {
     // std.debug.print("At: {s}\n", .{names[curr_ind]});
     if (curr_ind == end_ind) {
         cnt.* += 1;
@@ -71,17 +71,20 @@ fn countPathsRec(curr_ind: u8, cnt: *u16) void {
                 visited[next_ind] = true;
             }
             // std.debug.print("recursing to: {s}\n", .{names[next_ind]});
-            countPathsRec(@intCast(u8, next_ind), cnt);
+            countPathsRec(@intCast(u8, next_ind), cnt, allow_second_chance);
             visited[next_ind] = false;
+        }
+        if (val and visited[next_ind] and allow_second_chance and next_ind != start_ind) {
+            countPathsRec(@intCast(u8, next_ind), cnt, false);
         }
     }
     return;
 }
 
-fn countPaths() u16 {
+fn countPaths(allow_second_chance: bool) u32 {
     visited[start_ind] = true;
-    var cnt: u16 = 0;
-    countPathsRec(start_ind, &cnt);
+    var cnt: u32 = 0;
+    countPathsRec(start_ind, &cnt, allow_second_chance);
     return cnt;
 }
 
@@ -95,5 +98,6 @@ pub fn main() anyerror!void {
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
         processEdge(line);
     }
-    try std.io.getStdOut().writer().print("part1: {d}\n", .{countPaths()});
+    try std.io.getStdOut().writer().print("part1: {d}\n", .{countPaths(false)});
+    try std.io.getStdOut().writer().print("part2: {d}\n", .{countPaths(true)});
 }
