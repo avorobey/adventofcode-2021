@@ -11,11 +11,11 @@ var visited = [_][500]bool{[_]bool{false} ** 500} ** 500;
 // priorities[3] is a linear least of all points with current best distance 3.
 // pr_lengths[3] is the length of priorities[3].
 // pr_indices[i][j] is the index, within distances[i][j], of the point i,j.
-var priorities: [2000][1000][2]u8 = undefined;
-var pr_lengths = [_]u16{0} ** 2000;
+var priorities: [4000][1000][2]u16 = undefined;
+var pr_lengths = [_]u16{0} ** 4000;
 var pr_indices = [_][500]u16{[_]u16{0} ** 500} ** 500;
 
-fn updatePriority(x: u8, y: u8, pr: u16) void {
+fn updatePriority(x: u16, y: u16, pr: u16) void {
     var old_pr = distances[x][y];
     if (old_pr > 0 and old_pr <= pr) {
         return;
@@ -27,13 +27,13 @@ fn updatePriority(x: u8, y: u8, pr: u16) void {
         priorities[old_pr][ind] = priorities[old_pr][pr_lengths[old_pr] - 1];
         pr_lengths[old_pr] -= 1;
     }
-    priorities[pr][pr_lengths[pr]] = [2]u8{ x, y };
+    priorities[pr][pr_lengths[pr]] = [2]u16{ x, y };
     pr_indices[x][y] = pr_lengths[pr];
     pr_lengths[pr] += 1;
     distances[x][y] = pr;
 }
 
-fn getLeastPriority() [2]u8 {
+fn getLeastPriority() [2]u16 {
     for (pr_lengths) |val, ind| {
         if (val > 0) {
             var coord = priorities[ind][val - 1];
@@ -148,7 +148,7 @@ pub fn main() anyerror!void {
     // prEdges();
 
     // Set things up.
-    priorities[0][0] = [2]u8{ 0, 0 };
+    priorities[0][0] = [2]u16{ 0, 0 };
     pr_lengths[0] = 1;
     pr_indices[0][0] = 0;
 
