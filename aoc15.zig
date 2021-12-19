@@ -1,11 +1,11 @@
 const std = @import("std");
 const expect = std.testing.expect;
 
-var edges: [100][100]u8 = undefined;
+var edges: [500][500]u8 = undefined;
 var length: u32 = undefined;
 var width: u32 = undefined;
-var distances = [_][100]u16{[_]u16{0} ** 100} ** 100;
-var visited = [_][100]bool{[_]bool{false} ** 100} ** 100;
+var distances = [_][500]u16{[_]u16{0} ** 500} ** 500;
+var visited = [_][500]bool{[_]bool{false} ** 500} ** 500;
 
 // Poor man's priority table.
 // priorities[3] is a linear least of all points with current best distance 3.
@@ -13,7 +13,7 @@ var visited = [_][100]bool{[_]bool{false} ** 100} ** 100;
 // pr_indices[i][j] is the index, within distances[i][j], of the point i,j.
 var priorities: [2000][1000][2]u8 = undefined;
 var pr_lengths = [_]u16{0} ** 2000;
-var pr_indices = [_][100]u16{[_]u16{0} ** 100} ** 100;
+var pr_indices = [_][500]u16{[_]u16{0} ** 500} ** 500;
 
 fn updatePriority(x: u8, y: u8, pr: u16) void {
     var old_pr = distances[x][y];
@@ -54,6 +54,15 @@ fn prDist() void {
     }
 }
 
+fn prEdges() void {
+    for (edges[0..length]) |row| {
+        for (row[0..width]) |val| {
+            std.debug.print("{d} ", .{val});
+        }
+        std.debug.print("\n", .{});
+    }
+}
+
 fn dijkstra() void {
     while (true) {
         // prDist();
@@ -81,6 +90,17 @@ fn dijkstra() void {
 }
 
 pub fn main() anyerror!void {
+    // for part2, run with "zig run aoc15.zig -- part2"
+    var gpalloc = std.heap.GeneralPurposeAllocator(.{}){};
+    var args = std.process.args();
+    var part2 = false;
+    if (args.next(&gpalloc.allocator)) |_| {
+        if (args.next(&gpalloc.allocator)) |arg| {
+            if (std.mem.eql(u8, try arg, "part2")) {
+                part2 = true;
+            }
+        }
+    }
     var file = try std.fs.cwd().openFile("aoc15.input", .{});
     defer file.close();
     var buf_reader = std.io.bufferedReader(file.reader());
@@ -100,6 +120,33 @@ pub fn main() anyerror!void {
     }
     length = row;
 
+    if (part2) {
+        for (edges[0..length]) |r, x| {
+            for (r[0..width]) |val, y| {
+                var i: u8 = 0;
+                while (i < 5) {
+                    var j: u8 = 0;
+                    while (j < 5) {
+                        if (i == 0 and j == 0) {
+                            j += 1;
+                            continue;
+                        }
+                        var newval = val + i + j;
+                        if (newval > 9) {
+                            newval -= 9;
+                        }
+                        edges[x + i * length][y + j * width] = newval;
+                        j += 1;
+                    }
+                    i += 1;
+                }
+            }
+        }
+        length *= 5;
+        width *= 5;
+    }
+    // prEdges();
+
     // Set things up.
     priorities[0][0] = [2]u8{ 0, 0 };
     pr_lengths[0] = 1;
@@ -107,5 +154,5 @@ pub fn main() anyerror!void {
 
     dijkstra();
 
-    try std.io.getStdOut().writer().print("part1: {d}\n", .{distances[length - 1][width - 1]});
+    try std.io.getStdOut().writer().print("answer: {d}\n", .{distances[length - 1][width - 1]});
 }
