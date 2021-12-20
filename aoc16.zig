@@ -30,34 +30,75 @@ const PacketErrors = error{
 };
 
 // Returns number of bits consumed.
-fn processPacket(buf: []u8, accumVersion: *u16) PacketErrors!u16 {
+fn processPacket(buf: []u8, value: *u64, accumVersion: *u16) PacketErrors!u16 {
     // std.debug.print("Called with: {s}\n", .{buf});
     accumVersion.* += try std.fmt.parseInt(u8, buf[0..3], 2);
     const type_id = try std.fmt.parseInt(u8, buf[3..6], 2);
     var ind: u16 = 6;
+    var val: u64 = 0;
     if (type_id == 4) {
-        while (buf[ind] == '1') {
-            ind += 5;
+        while (true) {
+            val = val * 16 + try std.fmt.parseInt(u8, buf[ind + 1 .. ind + 5], 2);
+            if (buf[ind] == '0') {
+                break;
+            } else {
+                ind += 5;
+            }
         }
         ind += 5;
     } else {
-        if (buf[ind] == '1') {
-            var num_packets = try std.fmt.parseInt(u16, buf[ind + 1 .. ind + 12], 2);
+        const by_packets = (buf[ind] == '1');
+        var num_packets: u16 = undefined;
+        var num_bits: u16 = undefined;
+        if (by_packets) {
+            num_packets = try std.fmt.parseInt(u16, buf[ind + 1 .. ind + 12], 2);
             ind += 12;
-            while (num_packets > 0) {
-                ind += try processPacket(buf[ind..], accumVersion);
-                num_packets -= 1;
-            }
         } else {
-            var num_bits = try std.fmt.parseInt(u16, buf[ind + 1 .. ind + 16], 2);
+            num_bits = try std.fmt.parseInt(u16, buf[ind + 1 .. ind + 16], 2);
             ind += 16;
-            while (num_bits > 0) {
-                var consumed = try processPacket(buf[ind..], accumVersion);
-                num_bits -= consumed;
-                ind += consumed;
+        }
+        var num_packet: u16 = 0;
+        while (true) {
+            if (by_packets and num_packets == 0) {
+                break;
             }
+            if (!by_packets and num_bits == 0) {
+                break;
+            }
+            var new_val: u64 = 0;
+            const consumed = try processPacket(buf[ind..], &new_val, accumVersion);
+            ind += consumed;
+
+            // Figure out the value.
+            if (num_packet == 0) {
+                val = new_val;
+            } else {
+                if (type_id == 0) {
+                    val += new_val;
+                } else if (type_id == 1) {
+                    val *= new_val;
+                } else if (type_id == 2) {
+                    val = @minimum(val, new_val);
+                } else if (type_id == 3) {
+                    val = @maximum(val, new_val);
+                } else if (type_id == 5) {
+                    val = if (val > new_val) 1 else 0;
+                } else if (type_id == 6) {
+                    val = if (val < new_val) 1 else 0;
+                } else if (type_id == 7) {
+                    val = if (val == new_val) 1 else 0;
+                }
+            }
+
+            if (by_packets) {
+                num_packets -= 1;
+            } else {
+                num_bits -= consumed;
+            }
+            num_packet += 1;
         }
     }
+    value.* = val;
     return ind;
 }
 
@@ -95,7 +136,9 @@ pub fn main() anyerror!void {
     }
 
     var versionSum: u16 = 0;
-    _ = try processPacket(binary[0..len], &versionSum);
+    var val: u64 = 0;
+    _ = try processPacket(binary[0..len], &val, &versionSum);
 
     try std.io.getStdOut().writer().print("part1: {d}\n", .{versionSum});
+    try std.io.getStdOut().writer().print("part2: {d}\n", .{val});
 }
