@@ -8,7 +8,6 @@ fn processLinePart1(x1: i32, x2: i32, y1: i32, y2: i32, z1: i32, z2: i32, on: bo
     if (x1 < -50 or x2 > 50 or y1 < -50 or y2 > 50 or z1 < -50 or z2 > 50) {
         return;
     }
-    // std.debug.print("{d}:{d} {d}:{d} {d}:{d} {}\n", .{ x1, x2, y1, y2, z1, z2, on });
     for (arr) |row, i| {
         for (row) |col, j| {
             for (col) |_, k| {
@@ -52,41 +51,23 @@ pub const Brick = struct {
     // Subtract other from self - intersection must be nonempty - and adds pieces to list.
     fn subtractAndAppend(self: *const Brick, other: *const Brick, list: *std.ArrayList(Brick)) !void {
         var inter = self.intersect(other).?;
-        //print("subtractAndAppend, intersection: ", .{});
-        //inter.pr();
-        //print("self: ", .{});
-        //self.pr();
-        //print("list: ", .{});
-        //dumpBricks(list);
         if (maybeInit(self.lbx, self.lby, self.lbz, inter.lbx - 1, self.ruy, self.ruz)) |brick| {
             try list.append(brick);
-            //print("first brick: ", .{});
-            //brick.pr();
         }
         if (maybeInit(inter.rux + 1, self.lby, self.lbz, self.rux, self.ruy, self.ruz)) |brick| {
             try list.append(brick);
-            //print("second brick: ", .{});
-            //brick.pr();
         }
         if (maybeInit(inter.lbx, self.lby, self.lbz, inter.rux, self.ruy, inter.lbz - 1)) |brick| {
             try list.append(brick);
-            //print("third brick: ", .{});
-            //brick.pr();
         }
         if (maybeInit(inter.lbx, self.lby, inter.ruz + 1, inter.rux, self.ruy, self.ruz)) |brick| {
             try list.append(brick);
-            //print("fourth brick: ", .{});
-            //brick.pr();
         }
         if (maybeInit(inter.lbx, self.lby, inter.lbz, inter.rux, inter.lby - 1, inter.ruz)) |brick| {
             try list.append(brick);
-            //print("fifth brick: ", .{});
-            //brick.pr();
         }
         if (maybeInit(inter.lbx, inter.ruy + 1, inter.lbz, inter.rux, self.ruy, inter.ruz)) |brick| {
             try list.append(brick);
-            //print("sixth brick: ", .{});
-            //brick.pr();
         }
     }
     fn volume(self: *const Brick) i64 {
@@ -132,9 +113,6 @@ test "subtract" {
 }
 
 fn addToDisjointList(list: *std.ArrayList(Brick), new: *std.ArrayList(Brick), on: bool) !void {
-    //std.debug.print("Starting addToDisjointList\n", .{});
-    //dumpBricks(list);
-    //dumpBricks(new);
     var i: usize = 0;
     while (i < new.items.len) {
         var j: usize = 0;
@@ -143,32 +121,16 @@ fn addToDisjointList(list: *std.ArrayList(Brick), new: *std.ArrayList(Brick), on
             if (i >= new.items.len) {
                 break;
             }
-            //std.debug.print("i={}, j={}\n", .{ i, j });
-            //std.debug.print("bricks: ", .{});
-            //dumpBricks(list);
-            //std.debug.print("new_bricks: ", .{});
-            //dumpBricks(new);
             if (list.items[j].intersect(&new.items[i])) |inter| {
                 var olditem = list.items[j];
                 var newitem = new.items[i];
-                //std.debug.print("intersection between old {d} and new {d}:\n", .{ j, i });
-                //print("old: ", .{});
-                //olditem.pr();
-                //print("new: ", .{});
-                //newitem.pr();
-                //print("intersection: ", .{});
-                //inter.pr();
                 try olditem.subtractAndAppend(&inter, list);
-                //std.debug.print("old after sAA:\n", .{});
-                //dumpBricks(list);
                 if (on) {
                     try list.append(inter);
                 }
                 _ = list.swapRemove(j);
                 try newitem.subtractAndAppend(&inter, new);
                 _ = new.swapRemove(i);
-                //std.debug.print("new after sAA:\n", .{});
-                //dumpBricks(new);
                 advance_i = false;
             } else {
                 j += 1;
@@ -270,5 +232,4 @@ pub fn main() anyerror!void {
     }
     try std.io.getStdOut().writer().print("part1: {d}\n", .{cnt});
     try std.io.getStdOut().writer().print("part2: {d}\n", .{volBricks(&on_bricks)});
-    // dumpBricks(&on_bricks);
 }
