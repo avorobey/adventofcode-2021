@@ -97,6 +97,36 @@ pub const State = struct {
         }
         return true;
     }
+    fn badBlock(self: *const State) bool {
+        if (self.moving) |_| {
+            @panic("badBlock called with moving!");
+        }
+        for (self.code) |v, i| {
+            if (!isLarge(v) or !inHallway(@intCast(u8, i))) {
+                continue;
+            }
+            const gateway = indGateway(v);
+            const inc: bool = gateway > i;
+            var from = if (inc) i + 1 else i - 1;
+            while (from != gateway) {
+                if (isLarge(self.code[from])) {
+                    const second = self.code[from];
+                    const second_gateway = indGateway(second);
+                    const second_inc: bool = second_gateway > from;
+                    if (inc != second_inc) {
+                        if ((second_gateway < i and inc) or
+                            (second_gateway > i and !inc))
+                        {
+                            // print("Bad block reject: {s}\n", .{self.code});
+                            return true;
+                        }
+                    }
+                }
+                from = if (inc) from + 1 else from - 1;
+            }
+        }
+        return false;
+    }
     // Caller deinits.
     fn nextStates(self: *const State) !std.ArrayList(State) {
         var arr = std.ArrayList(State).init(&gpalloc.allocator);
@@ -114,7 +144,10 @@ pub const State = struct {
                 // Moving as a large letter. First thing we can do is stop.
                 // Stopping can't happen outside rooms.
                 if (!atGateway(ind)) {
-                    try arr.append(State{ .code = self.code, .moving = null });
+                    var next = State{ .code = self.code, .moving = null };
+                    if (!next.badBlock()) {
+                        try arr.append(next);
+                    }
                 }
                 // Moving left or right is fine.
                 if (self.code[ind - 1] == '.') {
@@ -308,12 +341,12 @@ fn dijkstra() !void {
                 break :outer;
             }
             cnt += 1;
-            if (cnt % 1000 == 0) {
-                print("cnt: {d} least distance: {d}\n", .{ cnt, least_sd.distance });
+            if (cnt % 10000 == 0) {
+                print("cnt: {d} least distance: {d} queue size: {d} distances: {d} visited: {d}\n", .{ cnt, least_sd.distance, queue.items.len, distances.count(), visited.count() });
             }
             try visited.put(least_sd.state, true);
             const state = least_sd.state;
-            print("Visiting: {s} moving:{}\n", .{ state.code, state.moving });
+            //print("Visiting: {s} moving:{}\n", .{ state.code, state.moving });
             const next_states = try state.nextStates();
             defer next_states.deinit();
             for (next_states.items) |next| {
